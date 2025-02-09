@@ -1,48 +1,73 @@
-var bcrypt = require("bcryptjs");
-// Creating our User model
+// const { Sequelize } = require(".");
+
+ 
 module.exports = function(sequelize, DataTypes) {
   var User = sequelize.define("User", {
-    email: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      unique: true,
-      validate: {
-      isEmail: true
-      }
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
     },
     username: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true
     },
-    points: {
-      type: DataTypes.INTEGER,
-      defaultValue: 10,
-
+    firstname: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    lastname: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    email: {
+      type: DataTypes.STRING,
+      allowNull: false,
     },
     password: {
       type: DataTypes.STRING,
-      allowNull: false
-    } ,
-    
+      allowNull: false,
+    },
+    phonenumber: {
+      type: DataTypes.STRING,
+    },
+    searchable: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      default:true
+    },
+    credit_score: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      default:0
+    },
 
-    
-     // dateOfBirth:{type:DataTypes.DATEONLY,
-    //         allowNull:true},
+    merchant_score:{
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      default:0
+    },
+    time_created: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
+    user_average_rating: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    user_category:{
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
+    ZipCode:{
+      type: DataTypes.INTEGER,
 
+    },
+    deleted:{
+      type:DataTypes.BOOLEAN,
+      allowNull:false,
+      default:false
+    }
   });
-  //  This will check if an unhashed password entered by the user can be compared to the hashed password stored in our database
-  User.prototype.validPassword = function(password) {
-    return bcrypt.compareSync(password, this.password);
-  };
-  // before a User is created, we will automatically hash their password
-  User.addHook("beforeCreate", function(user) {
-    user.password = bcrypt.hashSync(
-      user.password,
-      bcrypt.genSaltSync(10),
-      null
-    );
-  });
-  return User;
-};
-
+  return User
+}

@@ -1,17 +1,53 @@
 // Requiring our models
 var db = require("../models");
-var passport = require("passport");
+// var passport = require("passport");
 var connection = require("./connection");
-const spread = require("../models/spread");
-const { or } = require("sequelize");
-const reading = require("../models/reading");
 var Sequelize = require("sequelize");
 const Op = Sequelize.Op;
 //import the distance module for node
 var zipcodes = require("zipcodes");
-const user = require("../models/user");
+const bcrypt = require("bcrypt");
+const saltRounds = 10;
+const passport = require("passport");
+const LocalStrategy = require("passport-local").Strategy;
 
-const apiRoutesSearch = require("./api-routes-search");
+passport.use(
+  new LocalStrategy({ usernameField: "email" }, function (
+    email,
+    password,
+    done
+  ) {
+    db.User.findOne({ where: { email: email } })
+      .then((user) => {
+        if (!user) {
+          return done(null, false, { message: "Incorrect email." });
+        }
+
+        bcrypt.compare(password, user.password, function (err, result) {
+          if (err) {
+            return done(err);
+          }
+
+          if (!result) {
+            return done(null, false, { message: "Incorrect password." });
+          }
+
+          return done(null, user);
+        });
+      })
+      .catch((err) => done(err));
+  })
+);
+
+passport.serializeUser(function (user, done) {
+  done(null, user.id);
+});
+
+passport.deserializeUser(function (id, done) {
+  db.User.findByPk(id)
+    .then((user) => done(null, user))
+    .catch((err) => done(err));
+});
 
 const mockUsers = {
   "jim@joesrobotshop.com": {
@@ -30,24 +66,31 @@ const mockUsers = {
 
 
 module.exports = function (app) {
-  //sign up a new user
-  app.post("/api/signup", function (req, res) {
-    console.log("signing up");
-    console.log(req.body);
+
+app.post("/api/signup", function (req, res) {
+  const { email, password, username } = req.body;
+
+  bcrypt.hash(password, saltRounds, function (err, hashedPassword) {
+    if (err) {
+      console.log(err);
+      return res.status(500).json({ error: "Server error" });
+    }
+
     db.User.create({
-      email: req.body.email,
-      username: req.body.username,
-      password: req.body.password,
-
+      email: email,
+      password: hashedPassword,
+      username: username,
     })
-
-      .then(function (result) {
-        res.json(result);
+      .then(function () {
+        res.redirect(307, "/");
       })
       .catch(function (err) {
-        res.status(500).send("Oops! Something went wrong. Please try again."); 
+        console.log(err);
+        res.status(401).json(err);
       });
   });
+});
+
   //login a user
   app.post("/api/login", passport.authenticate("local"), function (req, res) {
     console.log("logging in");
@@ -70,11 +113,8 @@ module.exports = function (app) {
     });
   });
 
-  app.get("/api/mockusers", (req, res) => {
-    res.send(mockUsers);
-  });
 
-  app.get("/top/top_users/", (req, res) => {
+  app.get("/api/top_users/", (req, res) => {
    console.log("getting top users");
     db.User.findAll({
       where:{
@@ -88,6 +128,17 @@ module.exports = function (app) {
       res.status(500).send(err);
     });
   });
+
+  app.get("/api/user_by_id/:id", function(req, res){
+    console.log("getting user "+ id)
+    db.User.findOne({
+      id : req.id
+    }).then(function(result){
+      res.json(result);  
+    }).catch(function(err){
+      res.status(500).send(err);
+    })
+  })
 
   app.get("/api/top_merchants", function (req, res) {
     console.log("getting top merchants");
@@ -171,47 +222,111 @@ app.post("/api/get_services_by_serviceid", function (req, res) {
   serviceid = req.body.serviceid;
   console.log("getting services by service id");
   //user sql
-  closestServices =
-  connection.get("SELECT * FROM user_services join users on user_services.userid = users.id where serviceid = ? and zip = ? order by service_score desc limit 10", [serviceid, zipcode], function(err, rows, fields){
+  
+  connection.get("SELECT * FROM user_services join users on user_services.userid = users.id where serviceId = ? and zip = ? order by service_score desc limit 10", [serviceId, zipcode], function(err, rows, fields){
     if(err){
       console.log(err);
       res.status(500).send(err);
+    } else {
+      if(rows.length === 0){
+        //find the top 10 users with the closest zip code
+        db.users.findAll({
+          where: {
+            user_category: 2
+          },
+        }).then(function(result){
+          result.forEach(user => {
+            user.distance = zipcodes.distance(zipcode, user.zip);
+          });
+          result.sort((a, b) => a.distance - b.distance);
+          userIds = result.slice(0, 10).map(user => user.id);
+          db.user_services.findAll({
+            where: {
+              userId: userIds,
+              serviceId: serviceid
+            },
+            order: [["service_score", "DESC"]],
+            limit: 10
+          }).then(function(result){
+            res.json(result);
+          }).catch(function(err){
+            res.status(500).send(err);
+          });
+        });
+      } else {
+        res.json(rows);
+      }
     }
-    res.json(rows);
   });
-});
-if(closestServices.length === 0){
-  //find the top 10 users with the closest zip code
-  closestUsers = 
-  db.users.findAll({
-    where: {
-      user_category: 2
-    },
-  }).then(function(result){
-    result.forEach(user => {
-      user.distance = zipcodes.distance(zipcode, user.zip);
-    });
-    result.sort((a, b) => a.distance - b.distance);
-    userIds = result.slice(0, 10).map(user => user.id);
-    db.user_services.findAll({
-      where: {
-        //userid in userids
-        userId: userIds,
-        serviceId: serviceid
-      },
-      order: [["service_score", "DESC"]],
-      limit: 10
-    }).then(function(result){
-      res.json(result);
-    }).catch(function(err){
-      res.status(500).send(err);
-    });
-  });
+})
 
-}
+app.post("/spi/create_user_search", function(req, res){
+  db.User_search.create({
+    //now time
+    searchtime: 
+    new Date(),
+
+    
+  })
+})
   
 };
 
 
 
+  
+
+
+
+  // const bcrypt = require('bcrypt');
+
+// User sign-up function
+// app.post("/api/sign_up",async function (username, email, password) {
+//     try {
+//         // Hash the password
+//         const hashedPassword = await bcrypt.hash(password, 10);
+
+//         // Create a new user record
+//         const user = await db.User.create({
+//             username: username,
+//             email: email,
+//             password: hashedPassword,
+//         });
+
+//         console.log('User signed up successfully:', user.username);
+//         return user;
+//     } catch (error) {
+//         console.error('Error signing up user:', error);
+//         throw error;
+//     }
+//   });
+
+//   async function login(email, password) {
+//     try {
+//         // Find the user by email
+//         const user = await User.findOne({ where: { email } });
+
+//         if (!user) {
+//             console.log('Login failed: User not found');
+//             return null;
+//         }
+
+//         // Compare the provided password with the hashed password in the database
+//         const isPasswordValid = await bcrypt.compare(password, user.password);
+
+//         if (!isPasswordValid) {
+//             console.log('Login failed: Incorrect password');
+//             return null;
+//         }
+
+//         console.log('User logged in successfully:', user.username);
+//         return user;  // Optionally return user data or token for further processing
+//     } catch (error) {
+//         console.error('Error during login:', error);
+//         throw error;
+//     }
+// }
+
+  //sign up a new user
+  //sequelize sign up 
   

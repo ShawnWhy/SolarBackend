@@ -2,14 +2,10 @@
 var db = require("../models");
 var passport = require("passport");
 var connection = require("./connection");
-const spread = require("../models/spread");
-const { or } = require("sequelize");
-const reading = require("../models/reading");
 var Sequelize = require("sequelize");
 const Op = Sequelize.Op;
 //import the distance module for node
 var zipcodes = require("zipcodes");
-const user = require("../models/user");
 
 module.exports = function (app) {
   
