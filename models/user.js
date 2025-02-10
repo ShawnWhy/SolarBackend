@@ -1,4 +1,4 @@
-// const { Sequelize } = require(".");
+const { toDefaultValue } = require("sequelize/lib/utils");
 
  
 module.exports = function(sequelize, DataTypes) {
@@ -33,40 +33,37 @@ module.exports = function(sequelize, DataTypes) {
     },
     searchable: {
       type: DataTypes.BOOLEAN,
-      allowNull: false,
-      default:true
+      defaultValue:true
     },
     credit_score: {
       type: DataTypes.INTEGER,
-      allowNull: false,
-      default:0
+      defaultValue:0
     },
 
     merchant_score:{
       type: DataTypes.INTEGER,
-      allowNull: true,
-      default:0
+      defaultValue:0
     },
     time_created: {
       type: DataTypes.DATE,
       allowNull: false,
     },
     user_average_rating: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
+      type:DataTypes.INTEGER,
+      defaultValue:0
     },
     user_category:{
         type: DataTypes.INTEGER,
-        allowNull: false,
+        defaultValue:1
     },
     ZipCode:{
       type: DataTypes.INTEGER,
+      allowNull: true,
 
     },
     deleted:{
       type:DataTypes.BOOLEAN,
-      allowNull:false,
-      default:false
+        defaultValue:false
     }
   });
   return User

@@ -68,7 +68,9 @@ const mockUsers = {
 module.exports = function (app) {
 
 app.post("/api/signup", function (req, res) {
-  const { email, password, username } = req.body;
+
+  console.log(req.body)
+  const { email, password, username, } = req.body;
 
   bcrypt.hash(password, saltRounds, function (err, hashedPassword) {
     if (err) {
@@ -80,9 +82,12 @@ app.post("/api/signup", function (req, res) {
       email: email,
       password: hashedPassword,
       username: username,
+      firstname: req.body.firstname,
+      lastname: req.body.lastname,
+     time_created: req.body.time_created,
     })
       .then(function () {
-        res.redirect(307, "/");
+        res.status(200).json({ message: "User created" });
       })
       .catch(function (err) {
         console.log(err);

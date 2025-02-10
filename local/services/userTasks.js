@@ -1,9 +1,3 @@
-//import api from "../api";
-
-
-// import API from "./API";
-
-//set user history
 
 class userUtility {
 
@@ -14,19 +8,26 @@ getTopUsers(){
 getTopServices(){
 
 };
-createUSer(name, email, password, firstname, lastname,role) {
+createUSer(name, email, password, firstname, lastname,user_category) {
     const user = {
-      name: name,
+      username: name,
       email: email,
       firstname: firstname,
       lastname: lastname,
       password: password,
-      role: role,
+      user_category: user_category,
       time_created: new Date().toISOString(),
     };
     //use api to create user
     console.log("creating user")
-    API.signUp(user)
+    API.signUp(user).then(function (result) {
+        console.log("user created");
+        console.log(result);
+    }).catch(function (err) {
+        console.log("error creating user");
+        console.log(err);
+    }
+    );
 }
 
 signIn(email, password){
@@ -152,15 +153,15 @@ console.log("usertasks")
   
 var newUser = new(userUtility)
 newUser.consoleSomething();
-console.log(newUser.createUSer(
-    name="test",
+newUser.createUSer(
+    username="test",
     email="shawn@gmail.com",
     password="password",
     firstname="shawn",
     lastname="michael",
-    role=2
+    user_category=2
     
-    ))
+    )
 
 
 
