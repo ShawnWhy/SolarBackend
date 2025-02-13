@@ -11,7 +11,7 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
-    service_categiry: {
+    service_category: {
       type: DataTypes.STRING,
       allowNull: false,
     },
@@ -19,7 +19,7 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    userid: {
+    userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
@@ -27,10 +27,10 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
-    region_zipcode: {
+    votes: {
       type: DataTypes.INTEGER,
       allowNull: false,
-    }
+    },
   });
   return User_services
 }

@@ -67,6 +67,17 @@ const mockUsers = {
 
 module.exports = function (app) {
 
+
+app.get("/api/all_users", function (req, res) { 
+  console.log("getting all users");
+  db.User.findAll({}).then(function (result) {
+    res.json(result);
+  }).catch(function(err){
+    res.status(500).send
+  }
+  );
+});
+
 app.post("/api/signup", function (req, res) {
 
   console.log(req.body)
@@ -86,8 +97,8 @@ app.post("/api/signup", function (req, res) {
       lastname: req.body.lastname,
      time_created: req.body.time_created,
     })
-      .then(function () {
-        res.status(200).json({ message: "User created" });
+      .then(function (result) {
+        res.status(200).json(result);
       })
       .catch(function (err) {
         console.log(err);
@@ -202,7 +213,7 @@ async function getTopUserServices(userZip) {
   return userServices;
 }
 app.post("/api/top_service", function (req, res) {
-getTopUserServices(req.body.zip).then(userServices => {
+getTopUserServices(req.body.zipcode).then(userServices => {
   res.json(userServices);
 }).catch(err => { 
   res.status(500).send(err);
@@ -271,9 +282,33 @@ app.post("/spi/create_user_search", function(req, res){
     searchtime: 
     new Date(),
 
+    userid: req.body.userid,
+    search: req.body.search,
+
     
   })
 })
+
+app.post("/api/create_user_service", function (req, res) {
+  console.log("creating user service");
+  db.User_services.create({
+    userId: req.body.userId,
+    price: req.body.price,
+    service_category: req.body.service_category,
+    service_category_number: req.body.service_category_number,  
+    service_description: req.body.service_description,
+    serviceId: req.body.serviceId,
+    votes: req.body.votes,
+
+  })
+    .then(function (result) {
+      res.status(200).json(result);
+    })
+    .catch(function (err) {
+      console.log(err);
+      res.status(500).json(err);
+    });
+});
   
 };
 

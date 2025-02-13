@@ -1,4 +1,16 @@
 class APIUtils {
+
+
+
+  static getAllUsers() {
+    console.log("getting all users");
+    return $.ajax({
+      url: "/api/all_users",
+      method: "GET"
+    });
+  }
+
+
   static signUp(body) {
     console.log("signing up");
     return $.ajax({
@@ -49,6 +61,22 @@ class APIUtils {
     return $.ajax({
       url: "/api/top_users",
       method: "GET"
+    }).then(function (result) {
+      console.log("getting top users");
+      return(result);
+    }).catch(function (err) {
+      console.log("error getting top users");
+      console.log(err);
+    });
+  }
+
+  static getTopServices(user) {
+    console.log("getting top services");
+    return $.ajax({
+      url: "/api/top_services",
+      method: "post",
+      data: JSON.stringify(user),
+      contentType: "application/json",
     });
   }
 
@@ -147,6 +175,36 @@ class APIUtils {
     console.log("creating purchase history");
     return $.ajax({
       url: "/api/create_purchase_history",
+      method: "POST",
+      data: JSON.stringify(body),
+      contentType: "application/json"
+    });
+  }
+
+  static createTransactionMessage(body) {
+    console.log("creating transaction message");
+    return $.ajax({
+      url: "/api/create_transaction_message",
+      method: "POST",
+      data: JSON.stringify(body),
+      contentType: "application/json"
+    });
+  }
+
+  static createTransaction(body) {
+    console.log("creating transaction");
+    return $.ajax({
+      url: "/api/create_transaction",
+      method: "POST",
+      data: JSON.stringify(body),
+      contentType: "application/json"
+    });
+  }
+
+  static createService(body) {
+    console.log("creating service");
+    return $.ajax({
+      url: "/api/create_user_service",
       method: "POST",
       data: JSON.stringify(body),
       contentType: "application/json"

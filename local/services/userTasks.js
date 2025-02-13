@@ -1,13 +1,36 @@
+    // const user = require("../../models/user");
 
 class userUtility {
 
-getTopUsers(){
+getTopUsers(zipcode){
+
+console.log("getting top users")
+API.getTopUsers(zipcode).then(function (result) {
+    console.log("getting top users");
+    console.log(result);
+}).catch(function (err) {
+    console.log("error getting top users");
+    console.log(err);
+})
 
 };
 
 getTopServices(){
 
 };
+
+getAllusers(){
+
+    API.getAllusers().then(function (result) {
+        console.log("getting all users");
+        console.log(result);
+    }).catch(function (err) {
+        console.log("error getting all users");
+        console.log(err);
+    })
+
+}
+
 createUSer(name, email, password, firstname, lastname,user_category) {
     const user = {
       username: name,
@@ -162,6 +185,125 @@ newUser.createUSer(
     user_category=2
     
     )
+//create 20 random users with randomized name, email and password
+//user category from 1 to 2
+//randomize zipcode from 20165 to 20169
+//do not use faker
+
+function generateRandomServices(randomNumber){
+    API.getAllUsers().then(function (result) {
+        count = result.length;
+    for (let i = 0; i < 20; i++) {
+        const service = {
+            userId: Math.floor(Math.random() * count) + 1,
+            price: Math.floor(Math.random() * 1000) + 1,
+            service_category: "Category" + (Math.floor(Math.random() * 10) + 1),
+            service_category_number: Math.floor(Math.random() * 10) + 1,
+            service_description: "Description for service ",
+            votes: Math.floor(Math.random() * 100),
+        };
+
+        API.createService(service).then(function (result) {
+            console.log("service created");
+            console.log(result);
+        }).catch(function (err) {
+            console.log("error creating service");
+            console.log(err);
+        });
+    }
+}).catch(function (err) {
+    console.log("error getting all users");
+    console.log(err);
+}
+    );
+}
+
+function generateRandomUsers(randomNumber){
+for (let i = 0; i < 20; i++) {
+    const user = {
+      username: "user" + i + randomNumber,
+      email: "user" + i + randomNumber + "@gmail.com",
+      password: "password",
+      firstname: "user" + i + randomNumber,
+      lastname: "user" + i + randomNumber,
+      user_category: Math.floor(Math.random() * 2) + 1,
+      time_created: new Date().toISOString(),
+      zipcode: Math.floor(Math.random() * 5) + 20165,
+    };
+
+    API.signUp(user).then(function (result) {
+        console.log("user created");
+        console.log(result);
+    }).catch(function (err) {
+        console.log("error creating user");
+        console.log(err);
+    });
+}
+}
+
+const playserUser = {
+    email: "shawnyudesign@gmail.com",
+    password: "password",
+    firstname: "shawn",
+    lastname: "michael",
+    user_category: 1,
+    time_created: new Date().toISOString(),
+    zipcode: 20165,
+}
 
 
 
+$("#createUser").on("click", function (event) {
+    event.preventDefault();
+    console.log("submitting");
+    const user = {
+        email: $("#email").val().trim(),
+        password: $("#password").val().trim(),
+    };
+}
+);
+
+$("#createServices").on("click", function (event) {
+  event.preventDefault();
+  console.log("submitting");
+  const user = {
+    email: $("#email").val().trim(),
+    password: $("#password").val().trim(),
+  };
+});
+
+$("#getUserServices").on("click", function (event) {
+  event.preventDefault();
+
+
+});
+
+$("#generateRandomUsers").on("click", function (event) {
+  event.preventDefault();
+  console.log("submitting random users");
+  generateRandomUsers(Math.floor(Math.random() * 1000));
+});
+
+$("#generateRandomServices").on("click", function (event) {
+  event.preventDefault();
+  console.log("submitting random services");
+  generateRandomServices(Math.floor(Math.random() * 1000));
+});
+
+$("#getTopUsers").on("click", function (event) {
+  event.preventDefault();
+    API.getTopUsers(playserUser.zipcode).then(function (result) {
+        console.log("getting top users");
+        console.log(result);
+        //display top users in #topUserContainer
+        $("#topUserContainer").empty();
+        result.forEach(user => {
+            $("#topUserContainer").append(`<div>${user.username}</div>`);
+        
+    }).catch(function (err) {
+        console.log("error getting top users");
+        console.log(err);
+    });
+  
+});
+});
