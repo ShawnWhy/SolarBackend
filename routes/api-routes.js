@@ -64,54 +64,52 @@ const mockUsers = {
   },
 };
 
-
 module.exports = function (app) {
-
-
-app.get("/api/all_users", function (req, res) { 
-  console.log("getting all users");
-  db.User.findAll({}).then(function (result) {
-    res.json(result);
-  }).catch(function(err){
-    res.status(500).send
-  }
-  );
-});
-
-app.post("/api/signup", function (req, res) {
-
-  console.log(req.body)
-  const { email, password, username, } = req.body;
-
-  bcrypt.hash(password, saltRounds, function (err, hashedPassword) {
-    if (err) {
-      console.log(err);
-      return res.status(500).json({ error: "Server error" });
-    }
-
-    db.User.create({
-      email: email,
-      password: hashedPassword,
-      username: username,
-      firstname: req.body.firstname,
-      lastname: req.body.lastname,
-     time_created: req.body.time_created,
-    })
+  app.get("/api/all_users", function (req, res) {
+    console.log("getting all users");
+    db.User.findAll({})
       .then(function (result) {
-        res.status(200).json(result);
+        res.json(result);
       })
       .catch(function (err) {
-        console.log(err);
-        res.status(401).json(err);
+        res.status(500).send;
       });
   });
-});
+
+  app.post("/api/signup", function (req, res) {
+    console.log(req.body);
+    const { email, password, username } = req.body;
+
+    bcrypt.hash(password, saltRounds, function (err, hashedPassword) {
+      if (err) {
+        console.log(err);
+        return res.status(500).json({ error: "Server error" });
+      }
+
+      db.User.create({
+        email: email,
+        password: hashedPassword,
+        username: username,
+        firstname: req.body.firstname,
+        lastname: req.body.lastname,
+        time_created: req.body.time_created,
+        zipcode: req.body.zipcode,
+      })
+        .then(function (result) {
+          res.status(200).json(result);
+        })
+        .catch(function (err) {
+          console.log(err);
+          res.status(401).json(err);
+        });
+    });
+  });
 
   //login a user
   app.post("/api/login", passport.authenticate("local"), function (req, res) {
     console.log("logging in");
     res.json(req.user).catch(function (err) {
-      res.status(500).send(err); 
+      res.status(500).send(err);
     });
   });
 
@@ -122,228 +120,257 @@ app.post("/api/signup", function (req, res) {
       where: {
         id: req.params.id,
       },
-    }).then(function (result) {
-      res.json(result);
-    }).catch(function(err){
-      res.status(500).send(err); 
-    });
+    })
+      .then(function (result) {
+        res.json(result);
+      })
+      .catch(function (err) {
+        res.status(500).send(err);
+      });
   });
 
-
   app.get("/api/top_users/", (req, res) => {
-   console.log("getting top users");
+    console.log("getting top users");
     db.User.findAll({
-      where:{
-        user_category:1
+      where: {
+        user_category: 1,
       },
       limit: 10,
       order: [["credit_score", "DESC"]],
-    }).then(function (result) {
-      res.json(result);
-    }).catch(function(err){
-      res.status(500).send(err);
-    });
+    })
+      .then(function (result) {
+        res.json(result);
+      })
+      .catch(function (err) {
+        res.status(500).send(err);
+      });
   });
 
-  app.get("/api/user_by_id/:id", function(req, res){
-    console.log("getting user "+ id)
+  app.get("/api/user_by_id/:id", function (req, res) {
+    console.log("getting user " + id);
     db.User.findOne({
-      id : req.id
-    }).then(function(result){
-      res.json(result);  
-    }).catch(function(err){
-      res.status(500).send(err);
+      id: req.id,
     })
-  })
+      .then(function (result) {
+        res.json(result);
+      })
+      .catch(function (err) {
+        res.status(500).send(err);
+      });
+  });
 
   app.get("/api/top_merchants", function (req, res) {
     console.log("getting top merchants");
     db.User.findAll({
-      where:{
-        user_category:2
+      where: {
+        user_category: 2,
       },
       limit: 10,
       order: [["seller_score", "DESC"]],
-    }).then(function (result) {
-      res.json(result);
-    }).catch(function(err){
-      res.status(500).send(err); 
-    });
+    })
+      .then(function (result) {
+        res.json(result);
+      })
+      .catch(function (err) {
+        res.status(500).send(err);
+      });
   });
 
-//sequelize query this nested query "select * from user_services where userid in (select id from users where zip = {userZip}) order by service_score desc limit 10"
+  //sequelize query this nested query "select * from user_services where userid in (select id from users where zip = {userZip}) order by service_score desc limit 10"
 
-async function getTopUserServices(userZip, searchLimit) {
-  console.log("getting top user services async");
-  console.log("userZip", userZip);
-  console.log("searchLimit", searchLimit);
-  if(searchLimit<5){
-    searchLimit = 5;
-  }
-  // Step 1: Get all user IDs with the given zip code
-  let users;
-  try {
-    users = await db.User.findAll({
-      attributes: ['id'],
+  async function getTopUserServices(userZip, searchLimit) {
+    console.log("getting top user services async");
+    console.log("userZip", userZip);
+    console.log("searchLimit", searchLimit);
+    if (searchLimit < 5) {
+      searchLimit = 5;
+    }
+    // Step 1: Get all user IDs with the given zip code
+    let users;
+    try {
+      users = await db.User.findAll({
+        attributes: ["id"],
+        where: {
+          zipcode: userZip,
+          user_category: 2,
+        },
+        limit: searchLimit,
+      });
+    } catch (err) {
+      console.error("Error fetching users:", err);
+      throw err;
+    }
+
+    console.log("users", users);
+
+    // Extract user IDs as an array
+    let userIds = users.map((user) => user.id);
+    console.log("userIds 1", userIds);
+
+    if (userIds.length < searchLimit) {
+      // Find the top users with the closest zip code
+      let additionalUsers;
+      try{
+      additionalUsers = await db.User.findAll({
+        attributes: ["id", "zipcode"],
+        where: {
+          user_category: 2,
+        },
+      })
+    }catch(err){
+      console.error("Error fetching additional users:", err);
+      throw err;
+    }
+
+      additionalUsers.forEach((user) => {
+        user.distance = zipcodes.distance(userZip, user.zipcode);
+      });
+
+      additionalUsers.sort((a, b) => a.distance - b.distance);
+      additionalUsers = additionalUsers.filter(
+        (user) => !userIds.includes(user.id)
+        //and user is not in the userids array
+
+      );
+      userIds = userIds.concat(
+        additionalUsers
+          .slice(0, searchLimit - userIds.length)
+          .map((user) => user.id)
+      );
+
+      console.log("userIds", userIds);
+    }
+
+    // Step 2: Fetch user services using the retrieved user IDs
+    let userServices;
+
+    try{ userServices = await db.User_services.findAll({
       where: {
-        zipcode: userZip,
-        user_category: 2
+        userId: userIds,
       },
-      limit: searchLimit
+      order: [["votes", "DESC"]],
+      limit: 10,
     });
-  } catch (err) {
-    console.error("Error fetching users:", err);
+  }catch(err){
+    console.error("Error fetching user services:", err);
     throw err;
   }
 
-  console.log("users", users);
-
-  // Extract user IDs as an array
-  let userIds = users.map(user => user.id);
-  console.log("userIds 1", userIds);
-
-  if (userIds.length < searchLimit) {
-    // Find the top users with the closest zip code
-    const additionalUsers = await db.User.findAll({
-      attributes: ['id', 'zipcode'],
-      where: {
-        user_category: 2
-      },
-    });
-
-    additionalUsers.forEach(user => {
-      user.distance = zipcodes.distance(userZip, user.zip);
-    });
-
-    additionalUsers.sort((a, b) => a.distance - b.distance);
-    userIds = userIds.concat(additionalUsers.slice(0, searchLimit - userIds.length).map(user => user.id));
-
-    console.log("userIds", userIds);
+    return userServices;
   }
+  app.post("/api/top_services", async function (req, res) {
+    console.log("getting top services back!!!!!!!!!!!!!!!!!!!!!!");
 
-  // Step 2: Fetch user services using the retrieved user IDs
-  const userServices = await db.User_services.findAll({
-    where: {
-      userId: userIds
-    },
-    order: [['votes', 'DESC']],
-    limit: 10
-  });
-
-  return userServices;
-}
-app.post("/api/top_services", async function (req, res) {
-
-  console.log("getting top services back!!!!!!!!!!!!!!!!!!!!!!");
-
-  try {
-    const userServices = await getTopUserServices(req.body.zipcode, req.body.searchLimit);
-    res.json(userServices);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send(err);
-  }
-});
-
-app.get("/api/get_services_by_userid/:id", function (req, res) {
-  console.log("getting services by user id");
-  db.User_services.findAll({
-    where: {
-      userId: req.params.id,
-    },
-  }).then(function (result) {
-    res.json(result);
-  }).catch(function(err){
-    res.status(500).send(err);
-  });
-});
-
-app.post("/api/get_services_by_serviceid", function (req, res) {
-  zipcode = req.body.zipcode;
-  serviceid = req.body.serviceid;
-  console.log("getting services by service id");
-  //user sql
-  
-  connection.get("SELECT * FROM user_services join users on user_services.userid = users.id where serviceId = ? and zip = ? order by service_score desc limit 10", [serviceId, zipcode], function(err, rows, fields){
-    if(err){
-      console.log(err);
+    try {
+      const userServices = await getTopUserServices(
+        req.body.zipcode,
+        req.body.searchLimit
+      );
+      res.json(userServices);
+    } catch (err) {
+      console.error(err);
       res.status(500).send(err);
-    } else {
-      if(rows.length === 0){
-        //find the top 10 users with the closest zip code
-        db.users.findAll({
-          where: {
-            user_category: 2
-          },
-        }).then(function(result){
-          result.forEach(user => {
-            user.distance = zipcodes.distance(zipcode, user.zip);
-          });
-          result.sort((a, b) => a.distance - b.distance);
-          userIds = result.slice(0, 10).map(user => user.id);
-          db.User_services.findAll({
-            where: {
-              userId: userIds,
-              serviceId: serviceid
-            },
-            order: [["service_score", "DESC"]],
-            limit: 10
-          }).then(function(result){
-            res.json(result);
-          }).catch(function(err){
-            res.status(500).send(err);
-          });
-        });
-      } else {
-        res.json(rows);
-      }
     }
   });
-})
 
-app.post("/spi/create_user_search", function(req, res){
-  db.User_search.create({
-    //now time
-    searchtime: 
-    new Date(),
-
-    userid: req.body.userid,
-    search: req.body.search,
-
-    
-  })
-})
-
-app.post("/api/create_user_service", function (req, res) {
-  console.log("creating user service");
-  db.User_services.create({
-    userId: req.body.userId,
-    price: req.body.price,
-    service_category: req.body.service_category,
-    service_category_number: req.body.service_category_number,  
-    service_description: req.body.service_description,
-    serviceId: req.body.serviceId,
-    votes: req.body.votes,
-
-  })
-    .then(function (result) {
-      res.status(200).json(result);
+  app.get("/api/get_services_by_userid/:id", function (req, res) {
+    console.log("getting services by user id");
+    db.User_services.findAll({
+      where: {
+        userId: req.params.id,
+      },
     })
-    .catch(function (err) {
-      console.log(err);
-      res.status(500).json(err);
+      .then(function (result) {
+        res.json(result);
+      })
+      .catch(function (err) {
+        res.status(500).send(err);
+      });
+  });
+
+  app.post("/api/get_services_by_serviceid", function (req, res) {
+    zipcode = req.body.zipcode;
+    serviceid = req.body.serviceid;
+    console.log("getting services by service id");
+    //user sql
+
+    connection.get(
+      "SELECT * FROM user_services join users on user_services.userid = users.id where serviceId = ? and zip = ? order by service_score desc limit 10",
+      [serviceId, zipcode],
+      function (err, rows, fields) {
+        if (err) {
+          console.log(err);
+          res.status(500).send(err);
+        } else {
+          if (rows.length === 0) {
+            //find the top 10 users with the closest zip code
+            db.users
+              .findAll({
+                where: {
+                  user_category: 2,
+                },
+              })
+              .then(function (result) {
+                result.forEach((user) => {
+                  user.distance = zipcodes.distance(zipcode, user.zip);
+                });
+                result.sort((a, b) => a.distance - b.distance);
+                userIds = result.slice(0, 10).map((user) => user.id);
+                db.User_services.findAll({
+                  where: {
+                    userId: userIds,
+                    serviceId: serviceid,
+                  },
+                  order: [["service_score", "DESC"]],
+                  limit: 10,
+                })
+                  .then(function (result) {
+                    res.json(result);
+                  })
+                  .catch(function (err) {
+                    res.status(500).send(err);
+                  });
+              });
+          } else {
+            res.json(rows);
+          }
+        }
+      }
+    );
+  });
+
+  app.post("/spi/create_user_search", function (req, res) {
+    db.User_search.create({
+      //now time
+      searchtime: new Date(),
+
+      userid: req.body.userid,
+      search: req.body.search,
     });
-});
-  
+  });
+
+  app.post("/api/create_user_service", function (req, res) {
+    console.log("creating user service");
+    db.User_services.create({
+      userId: req.body.userId,
+      price: req.body.price,
+      service_category: req.body.service_category,
+      service_category_number: req.body.service_category_number,
+      service_description: req.body.service_description,
+      serviceId: req.body.serviceId,
+      votes: req.body.votes,
+    })
+      .then(function (result) {
+        res.status(200).json(result);
+      })
+      .catch(function (err) {
+        console.log(err);
+        res.status(500).json(err);
+      });
+  });
 };
 
-
-
-  
-
-
-
-  // const bcrypt = require('bcrypt');
+// const bcrypt = require('bcrypt');
 
 // User sign-up function
 // app.post("/api/sign_up",async function (username, email, password) {
@@ -392,6 +419,5 @@ app.post("/api/create_user_service", function (req, res) {
 //     }
 // }
 
-  //sign up a new user
-  //sequelize sign up 
-  
+//sign up a new user
+//sequelize sign up
