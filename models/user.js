@@ -56,7 +56,7 @@ module.exports = function(sequelize, DataTypes) {
         type: DataTypes.INTEGER,
         defaultValue:1
     },
-    ZipCode:{
+    zipcode:{
       type: DataTypes.INTEGER,
       allowNull: true,
 

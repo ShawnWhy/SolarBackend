@@ -72,6 +72,7 @@ class APIUtils {
 
   static getTopServices(user) {
     console.log("getting top services");
+    console.log(user);
     return $.ajax({
       url: "/api/top_services",
       method: "post",

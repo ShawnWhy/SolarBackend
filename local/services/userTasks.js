@@ -15,7 +15,15 @@ API.getTopUsers(zipcode).then(function (result) {
 
 };
 
-getTopServices(){
+getTopServices(body){
+
+    API.getTopServices(body).then(function (result) {
+        console.log("getting top services");
+        console.log(result);
+    }).catch(function (err) {
+        console.log("error getting top services");
+        console.log(err);
+    })
 
 };
 
@@ -306,4 +314,22 @@ $("#getTopUsers").on("click", function (event) {
     });
   
 });
+});
+
+$("#getTopServices").on("click", function (event) {
+  event.preventDefault();
+  console.log("getting top servicesq");
+  const body = {
+    zipcode: 20165,
+    searchLimit:11
+  };
+    API.getTopServices(body).then(function (result) {
+        console.log("getting top services2");
+        console.log(result);
+        //display top services in #topServiceContainer
+        $("#topServiceContainer").empty();
+        result.forEach(service => {
+            $("#topServiceContainer").append(`<div>${service.service_name}</div>`);
+        });
+})
 });

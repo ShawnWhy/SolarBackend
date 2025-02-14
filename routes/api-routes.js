@@ -173,56 +173,81 @@ app.post("/api/signup", function (req, res) {
 
 //sequelize query this nested query "select * from user_services where userid in (select id from users where zip = {userZip}) order by service_score desc limit 10"
 
-async function getTopUserServices(userZip) {
+async function getTopUserServices(userZip, searchLimit) {
+  console.log("getting top user services async");
+  console.log("userZip", userZip);
+  console.log("searchLimit", searchLimit);
+  if(searchLimit<5){
+    searchLimit = 5;
+  }
   // Step 1: Get all user IDs with the given zip code
-  const users = await User.findAll({
-    attributes: ['id'],
-    where: {
-      zip: userZip,
-      user_category: 2
-    }
-  });
+  let users;
+  try {
+    users = await db.User.findAll({
+      attributes: ['id'],
+      where: {
+        zipcode: userZip,
+        user_category: 2
+      },
+      limit: searchLimit
+    });
+  } catch (err) {
+    console.error("Error fetching users:", err);
+    throw err;
+  }
+
+  console.log("users", users);
 
   // Extract user IDs as an array
-  const userIds = users.map(user => user.id);
+  let userIds = users.map(user => user.id);
+  console.log("userIds 1", userIds);
 
-  if(userid.length === 0) {
-    //find the top 10 users with the closest zip code
-    const users = await User.findAll({
-      attributes: ['id'],
+  if (userIds.length < searchLimit) {
+    // Find the top users with the closest zip code
+    const additionalUsers = await db.User.findAll({
+      attributes: ['id', 'zipcode'],
       where: {
         user_category: 2
       },
     });
-    users.forEach(user => {
+
+    additionalUsers.forEach(user => {
       user.distance = zipcodes.distance(userZip, user.zip);
     });
-    users.sort((a, b) => a.distance - b.distance);
-    userIds = users.slice(0, 10).map(user => user.id);
+
+    additionalUsers.sort((a, b) => a.distance - b.distance);
+    userIds = userIds.concat(additionalUsers.slice(0, searchLimit - userIds.length).map(user => user.id));
+
+    console.log("userIds", userIds);
   }
 
   // Step 2: Fetch user services using the retrieved user IDs
-  const userServices = await User_service.findAll({
+  const userServices = await db.User_services.findAll({
     where: {
       userId: userIds
     },
-    order: [['service_score', 'DESC']],
+    order: [['votes', 'DESC']],
     limit: 10
   });
 
   return userServices;
 }
-app.post("/api/top_service", function (req, res) {
-getTopUserServices(req.body.zipcode).then(userServices => {
-  res.json(userServices);
-}).catch(err => { 
-  res.status(500).send(err);
+app.post("/api/top_services", async function (req, res) {
+
+  console.log("getting top services back!!!!!!!!!!!!!!!!!!!!!!");
+
+  try {
+    const userServices = await getTopUserServices(req.body.zipcode, req.body.searchLimit);
+    res.json(userServices);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send(err);
+  }
 });
-})
 
 app.get("/api/get_services_by_userid/:id", function (req, res) {
   console.log("getting services by user id");
-  db.User_service.findAll({
+  db.User_services.findAll({
     where: {
       userId: req.params.id,
     },
@@ -256,7 +281,7 @@ app.post("/api/get_services_by_serviceid", function (req, res) {
           });
           result.sort((a, b) => a.distance - b.distance);
           userIds = result.slice(0, 10).map(user => user.id);
-          db.user_services.findAll({
+          db.User_services.findAll({
             where: {
               userId: userIds,
               serviceId: serviceid
