@@ -211,6 +211,16 @@ class APIUtils {
       contentType: "application/json"
     });
   }
+
+  static getServiceBySearch(body) {
+    console.log("getting services by search");
+    return $.ajax({
+      url: "/api/get_services_by_search",
+      method: "POST",
+      data: JSON.stringify(body),
+      contentType: "application/json"
+    });
+  }
 }
 
 var API = APIUtils;

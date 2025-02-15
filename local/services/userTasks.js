@@ -180,19 +180,19 @@ storeUserFavorite() {
 
 }
 
-console.log("usertasks")
+// console.log("usertasks")
   
-var newUser = new(userUtility)
-newUser.consoleSomething();
-newUser.createUSer(
-    username="test",
-    email="shawn@gmail.com",
-    password="password",
-    firstname="shawn",
-    lastname="michael",
-    user_category=2
+// var newUser = new(userUtility)
+// newUser.consoleSomething();
+// newUser.createUSer(
+//     username="test",
+//     email="shawn@gmail.com",
+//     password="password",
+//     firstname="shawn",
+//     lastname="michael",
+//     user_category=2
     
-    )
+//     )
 //create 20 random users with randomized name, email and password
 //user category from 1 to 2
 //randomize zipcode from 20165 to 20169
@@ -249,7 +249,7 @@ for (let i = 0; i < 20; i++) {
 }
 }
 
-const playserUser = {
+const playerUser = {
     email: "shawnyudesign@gmail.com",
     password: "password",
     firstname: "shawn",
@@ -333,3 +333,33 @@ $("#getTopServices").on("click", function (event) {
         });
 })
 });
+
+$("#searchForm").on("submit", function (event) {
+    event.preventDefault();
+    console.log("submitting search");
+    const body = {
+      myZipcode: playerUser.zipcode,
+      zipcode: $("#zipcode").val().trim(),
+      service_name: $("#searchWord").val().trim(),
+      service_price_top: $("#priceTop").val().trim(),
+      service_price_bottom: $("#priceBottom").val().trim(),
+      order_by: $("#orderBy").val().trim(),
+      search_limit: $("#searchFormLimit").val().trim(),
+    };
+        API.getServiceBySearch(body)
+          .then(function (result) {
+            console.log("search results");
+            console.log(result);
+            //display search results in #searchContainer
+            $("#searchContainer").empty();
+            result.forEach((service) => {
+              $("#searchContainer").append(
+                `<div>${service.service_name}</div>`
+              );
+            });
+          })
+          .catch(function (err) {
+            console.log("error searching");
+            console.log(err);
+          });
+    });

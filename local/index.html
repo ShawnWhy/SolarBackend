@@ -19,6 +19,32 @@
 
     <button id="generateRandomServices">generate Random services</button>
 
+    <form
+    id="searchForm"
+    submit="generateSearch"
+    >
+    <label for ="username">Merchant Name</label>
+    <input type="text" id="username" />
+    <label for="zipcode">Zipcode</label>
+    <input type="text" id="zipcode" />
+    <label for="searchWord">key Word</label>
+    <input type="text" id="searchWord" />
+    <label for="priceTop">price range Top</label>
+    //input for money with two decimal places  
+    <input id="priceTop" type="number" step="0.01"/>
+        <label for="priceBottom">price range bottom</label>
+    //input for money with two decimal places  
+    <input id="priceBottom" type="number" step="0.01"/>
+    <button type="submit">search</button>
+    <label for="searchFormLimit">limit</label>
+    <select id="orderBy">
+    <option value="price">price</option>
+    <option value="rating">rating</option>
+    <option value="distance">distance</option>
+    </select>
+    <input type="number" id="searchFormLimit">
+    </form>
+
 
 
     <!-- jqery -->
