@@ -19,9 +19,13 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.STRING,
       allowNull: false,
     },
+    //foreign key
     userId: {
       type: DataTypes.INTEGER,
+      
       allowNull: false,
+
+
     },
     price: {
       type: DataTypes.INTEGER,
@@ -32,6 +36,14 @@ module.exports = function(sequelize, DataTypes) {
       allowNull: false,
     },
   });
+  User_services.associate = function(models) {
+    User_services.belongsTo(models.User, {
+      foreignKey: {
+
+        allowNull: false
+      }
+    });
+  };
   return User_services
 }
 

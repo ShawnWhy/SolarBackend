@@ -64,7 +64,27 @@ module.exports = function(sequelize, DataTypes) {
     deleted:{
       type:DataTypes.BOOLEAN,
         defaultValue:false
-    }
+    },
+    //user has one user_profile
+
   });
+      User.associate = function (models) {
+        User.hasOne(models.User_profile, {
+          foreignKey: "userid",
+          onDelete: "CASCADE",
+        });
+      };
+      User.associate = function (models) {
+        User.hasMany(models.User_messages, {
+          foreignKey: "senderid",
+          onDelete: "CASCADE",
+        });
+      };
+      User.associate = function(models){
+        User.hasMany(models.User_services, {
+          foreignKey: "userId",
+          onDelete: "CASCADE",
+        }); 
+      };
   return User
 }

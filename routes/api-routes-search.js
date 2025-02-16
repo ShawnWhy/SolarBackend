@@ -10,8 +10,90 @@ const FuzzySearch = require('fuzzy-search');
 const user = require("../models/user");
 
 module.exports = function (app) {
+
+  const calculateRating=function(user_score, merchant_score, service_score) {
+
+    if(user_score === null || user_score === undefined){
+      return (merchant_score + service_score) / 2;
+    }
+    else{
+    return (user_score + merchant_score + service_score) / 3;
+      }
+  };
+
+  const searchFunction = function (body, res) {
+
+    console.log("new search function")
+    console.log(body);
+    db.User_services.findAll({
+      where: {
+        //service name or service description
+        [Op.or]: [
+          {
+            service_category: {
+              //fuzzy search
+              [Op.like]: body.service_name,
+            },
+          },
+          {
+            service_description: {
+              //fuzzy search
+              [Op.like]: body.service_name,
+            },
+          },
+        ],
+        price: {
+          [Op.between]: [
+            body.service_price_range_bottom,
+            body.service_price_range_top,
+          ],
+        },
+      },
+  include: [{
+    model: db.User,
+    where: {
+      user_category: 2,
+    },
+    required: true
+  }]
+  // joinTableAttributes: [],
+  // raw: true,
+  // nest: true,
+  // includeIgnoreAttributes: false,
+  // having: Sequelize.literal('User.id = User_services.userId')
+
+    }).then(function (result) {
+      console.log(result);
+      result.forEach((user_service) => {
+        user_service.distance = zipcodes.distance(zipcode, user_service.User.zipcode);
+        user_service.rating = calculateRating(user_service.User.user_average_rating, user_service.User.merchant_score, user_service.votes);
+
+      });
+      if(body.order_by === "distance" || body.order_by === "price"){
+      result.sort((a, b) => a.order_by - b.order_by);
+      }
+      const searchResult = result.slice(0, 50);
+      if (searchResult.length === 0) {
+        searchFunctionFuzzyMatch(
+          {
+            userIds: searchResult.map((user_service) => user_service.User.id),
+            service_name: body.service_name,
+            service_price_range_top: body.service_price_range_top,
+            service_price_range_bottom: body.service_price_range_bottom,
+            order_by: body.order_by,
+            search_limit: body.search_limit,
+          },
+          res
+        );
+      } else {
+        res.json(searchResult);
+      }
+    }).catch(function (err) {
+      res.status(500).send(err);
+    });
+  };
   
-  const searchFunction = function(body, res){
+  const searchFunctionold = function(body, res){
     db.User.findAll({
       where: {
         user_category: 2,
@@ -28,7 +110,7 @@ module.exports = function (app) {
           //service name or service description
           [Op.or]: [
             {
-              service_name: {
+              service_category: {
                 //fuzzy search
                 [Op.like]: body.service_name,
               },
@@ -75,7 +157,12 @@ module.exports = function (app) {
   const searchFunctionNoDistance = function(body, res){
     console.log("searchFunctionNoDistance");
     console.log(body);
-
+    if(body.order_by === "distance"){
+      body.order_by = "votes";
+    }
+    if(body.order_by === "rating"){
+      body.order_by = "votes";
+    }
       db.User_services.findAll({
         where: {
           //service name or service description
@@ -152,24 +239,59 @@ module.exports = function (app) {
   function searchFunctionFuzzyMatch(body, res){
     console.log("searchFunctionFuzzyMatch");
     console.log(body);
-      db.User_services.findAll({
-        where: {
-          userId: userIds,
-          price: {
-            [Op.between]: [body.service_price_range_bottom, body.service_price_range_top],
-          },
+    db.User_services.findAll({
+      where: {
+        //service name or service description
+        price: {
+          [Op.between]: [
+            body.service_price_range_bottom,
+            body.service_price_range_top,
+          ],
         },
-      })
-        .then(function (result) {
-          const searcher = new FuzzySearch(result, ['service_name', 'service_description'], {
+      },
+      include: [
+        {
+          model: db.User,
+          where: {
+            user_category: 2,
+          },
+          required: true,
+        },
+      ],
+    })
+      .then(function (result) {
+        const searcher = new FuzzySearch(
+          result,
+          ["service_category", "service_description"],
+          {
             caseSensitive: false,
-          });
-          const searchResult = searcher.search(body.service_name);
-          res.json(searchResult);
-        })
-        .catch(function (err) {
-          res.status(500).send(err);
+          }
+        );
+        const searchResult = searcher.search(body.service_name);
+
+        searchResult.forEach((user_service) => {
+          user_service.distance = zipcodes.distance(
+            zipcode,
+            user_service.User.zipcode
+          );
+          user_service.rating = calculateRating(
+            user_service.User.user_average_rating,
+            user_service.User.merchant_score,
+            user_service.votes
+          );
         });
+        if (body.order_by === "distance" || body.order_by === "price") {
+          searchResult.sort((a, b) => a.order_by - b.order_by);
+        } else if (body.order_by === "rating") {
+          searchResult.sort((a, b) => b.rating - a.rating);
+        }
+
+        //sort by order_by
+        res.json(searchResult);
+      })
+      .catch(function (err) {
+        res.status(500).send(err);
+      });
 
   }
   app.post("/api/get_services_by_search", function (req, res) {
@@ -218,7 +340,7 @@ module.exports = function (app) {
 
     if(service_price_range_top !== null
       &&service_price_range_bottom !==null
-      && service_price_range_top < service_price_range_bottom
+      && service_price_range_top > service_price_range_bottom
       && service_price_range_top > 0
       && service_name !== null
       && service_name.length > 0
