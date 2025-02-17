@@ -349,12 +349,15 @@ $("#searchForm").on("submit", function (event) {
         API.getServiceBySearch(body)
           .then(function (result) {
             console.log("search results");
-            console.log(result);
+            // console.log(result);
             //display search results in #searchContainer
             $("#searchContainer").empty();
             result.forEach((service) => {
+                                console.log(service),
+
               $("#searchContainer").append(
-                `<div>${service.service_name}</div>`
+                `<div>${service.service_category}</div>`
+                // `<div>${service.service_description}</div>`
               );
             });
           })

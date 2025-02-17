@@ -63,16 +63,19 @@ module.exports = function (app) {
   // having: Sequelize.literal('User.id = User_services.userId')
 
     }).then(function (result) {
-      console.log(result);
+      // console.log(result);
       result.forEach((user_service) => {
         user_service.distance = zipcodes.distance(zipcode, user_service.User.zipcode);
         user_service.rating = calculateRating(user_service.User.user_average_rating, user_service.User.merchant_score, user_service.votes);
 
       });
       if(body.order_by === "distance" || body.order_by === "price"){
-      result.sort((a, b) => a.order_by - b.order_by);
+      result.sort((a, b) => a[body.order_by] - b[body.order_by]);
       }
-      const searchResult = result.slice(0, 50);
+      else if(body.order_by === "rating"){
+        result.sort((a, b) => b.rating - a.rating);
+      }
+      const searchResult = result.slice(0, body.search_limit);
       if (searchResult.length === 0) {
         searchFunctionFuzzyMatch(
           {
@@ -188,7 +191,7 @@ module.exports = function (app) {
           },
         },
         order: [[body.order_by, "DESC"]],
-        limit: body.search_limit,
+        limit: parseInt(body.search_limit),
       })
         .then(function (result) {
           if (result.length === 0) {
@@ -229,6 +232,23 @@ module.exports = function (app) {
           caseSensitive: false,
         });
         const searchResult = searcher.search(body.service_name);
+        searchResult.forEach((user_service) => {
+          user_service.distance = zipcodes.distance(
+            zipcode,
+            user_service.User.zipcode
+          );
+          user_service.rating = calculateRating(
+            user_service.User.user_average_rating,
+            user_service.User.merchant_score,
+            user_service.votes
+          );
+        });
+        if (body.order_by === "price") {
+          searchResult.sort((a, b) => a.order_by - b.order_by);
+        } else if (body.order_by === "rating") {
+          searchResult.sort((a, b) => b.rating - a.rating);
+        }
+
         res.json(searchResult);
       })
       .catch(function (err) {
