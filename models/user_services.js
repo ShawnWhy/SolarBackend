@@ -35,6 +35,10 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
+    time_required: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
   });
   User_services.associate = function(models) {
     User_services.belongsTo(models.User, {

@@ -34,9 +34,27 @@ app.get("/*", (req, res) => {
   }
   res.sendFile(path.join(__dirname, "local", "index.html"));
 });
+//provide javascript files for html
+app.get("/IOClient.js", (req, res) => {
+  res.sendFile(path.join(__dirname, "local", "IOClient.js"));
+}
+);
 
 db.sequelize.sync().then(function () {
   server.listen(PORT, function () {
     console.log("App listening on PORT " + PORT);
+  });
+});
+
+//start socket IO server
+const io = require("socket.io")(server);
+io.on("connection", (socket) => {
+  console.log("New client connected");
+  socket.on("message", (message) => {
+    console.log("Message received:", message);
+    io.emit("message", message);
+  });
+  socket.on("disconnect", () => {
+    console.log("Client disconnected");
   });
 });

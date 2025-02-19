@@ -48,10 +48,10 @@ class APIUtils {
     });
   }
 
-  static getUserData() {
+  static getUserData(id) {
     console.log("getting your data");
     return $.ajax({
-      url: "/api/user_data",
+      url: "/api/user_profile/" + id,
       method: "GET"
     });
   }

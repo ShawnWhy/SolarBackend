@@ -75,6 +75,48 @@ module.exports = function (app) {
         res.status(500).send;
       });
   });
+//get user by id
+  app.get("/api/user_by_id/:id", function (req, res) {
+    console.log("getting user by id");
+    db.User.findOne({
+      where: {
+        id: req.params.id,
+      },
+        includes: [
+        db.User-profile
+        ],
+    })
+      .then(function (result) {
+        res.json(result);
+      })
+      .catch(function (err) {
+        res.status(500).send(err);
+      });
+
+  })
+
+  //create user profile
+  app.post("/api/create_user_profile", function (req, res) {
+    console.log("creating user profile");
+    db.User_profile.create({
+      userid: req.body.userid,
+      user_name: req.body.user_name,
+      user_bio: req.body.user_bio,
+      user_photo_url: req.body.user_photo_url,
+    })
+      .then(function (result) {
+        res.json(result);
+      })
+      .catch(function (err) {
+        res.status(500).send(err);
+      });
+  }
+  );
+
+  
+
+
+
 
   app.post("/api/signup", function (req, res) {
     console.log(req.body);
@@ -113,14 +155,37 @@ module.exports = function (app) {
     });
   });
 
-  //delete user
-  app.delete("/api/deleteUser/:id", function (req, res) {
-    console.log("deleting user");
-    db.User.destroy({
-      where: {
-        id: req.params.id,
+  //logout a user
+  app.get("/api/logout", function (req, res) {
+    req.logout();
+    res.redirect("/");
+  });
+
+  //update user
+  app.put("/api/updateUser/:id", function (req, res) {
+    console.log("updating user");
+    db.User.update(
+      {
+        username: req.body.username,
+        firstname: req.body.firstname,
+        lastname: req.body.lastname,
+        email: req.body.email,
+        password: req.body.password,
+        phonenumber: req.body.phonenumber,
+        searchable: req.body.searchable,
+        credit_score: req.body.credit_score,
+        merchant_score: req.body.merchant_score,
+        time_created: req.body.time_created,
+        user_average_rating: req.body.user_average_rating,
+        user_category: req.body.user_category,
+        zipcode: req.body.zipcode,
       },
-    })
+      {
+        where: {
+          id: req.params.id,
+        },
+      }
+    )
       .then(function (result) {
         res.json(result);
       })
@@ -128,15 +193,13 @@ module.exports = function (app) {
         res.status(500).send(err);
       });
   });
-
-  app.get("/api/top_users/", (req, res) => {
-    console.log("getting top users");
-    db.User.findAll({
+  //delete user
+  app.delete("/api/deleteUser/:id", function (req, res) {
+    console.log("deleting user");
+    db.User.destroy({
       where: {
-        user_category: 1,
+        id: req.params.id,
       },
-      limit: 10,
-      order: [["credit_score", "DESC"]],
     })
       .then(function (result) {
         res.json(result);
@@ -159,119 +222,7 @@ module.exports = function (app) {
       });
   });
 
-  app.get("/api/top_merchants", function (req, res) {
-    console.log("getting top merchants");
-    db.User.findAll({
-      where: {
-        user_category: 2,
-      },
-      limit: 10,
-      order: [["seller_score", "DESC"]],
-    })
-      .then(function (result) {
-        res.json(result);
-      })
-      .catch(function (err) {
-        res.status(500).send(err);
-      });
-  });
-
-  //sequelize query this nested query "select * from user_services where userid in (select id from users where zip = {userZip}) order by service_score desc limit 10"
-
-  async function getTopUserServices(userZip, searchLimit) {
-    console.log("getting top user services async");
-    console.log("userZip", userZip);
-    console.log("searchLimit", searchLimit);
-    if (searchLimit < 5) {
-      searchLimit = 5;
-    }
-    // Step 1: Get all user IDs with the given zip code
-    let users;
-    try {
-      users = await db.User.findAll({
-        attributes: ["id"],
-        where: {
-          zipcode: userZip,
-          user_category: 2,
-        },
-        limit: searchLimit,
-      });
-    } catch (err) {
-      console.error("Error fetching users:", err);
-      throw err;
-    }
-
-    console.log("users", users);
-
-    // Extract user IDs as an array
-    let userIds = users.map((user) => user.id);
-    console.log("userIds 1", userIds);
-
-    if (userIds.length < searchLimit) {
-      // Find the top users with the closest zip code
-      let additionalUsers;
-      try{
-      additionalUsers = await db.User.findAll({
-        attributes: ["id", "zipcode"],
-        where: {
-          user_category: 2,
-        },
-      })
-    }catch(err){
-      console.error("Error fetching additional users:", err);
-      throw err;
-    }
-
-      additionalUsers.forEach((user) => {
-        user.distance = zipcodes.distance(userZip, user.zipcode);
-      });
-
-      additionalUsers.sort((a, b) => a.distance - b.distance);
-      additionalUsers = additionalUsers.filter(
-        (user) => !userIds.includes(user.id)
-        //and user is not in the userids array
-
-      );
-      userIds = userIds.concat(
-        additionalUsers
-          .slice(0, searchLimit - userIds.length)
-          .map((user) => user.id)
-      );
-
-      console.log("userIds", userIds);
-    }
-
-    // Step 2: Fetch user services using the retrieved user IDs
-    let userServices;
-
-    try{ userServices = await db.User_services.findAll({
-      where: {
-        userId: userIds,
-      },
-      order: [["votes", "DESC"]],
-      limit: 10,
-    });
-  }catch(err){
-    console.error("Error fetching user services:", err);
-    throw err;
-  }
-
-    return userServices;
-  }
-  app.post("/api/top_services", async function (req, res) {
-    console.log("getting top services back!!!!!!!!!!!!!!!!!!!!!!");
-
-    try {
-      const userServices = await getTopUserServices(
-        req.body.zipcode,
-        req.body.searchLimit
-      );
-      res.json(userServices);
-    } catch (err) {
-      console.error(err);
-      res.status(500).send(err);
-    }
-  });
+  
 
   app.get("/api/get_services_by_userid/:id", function (req, res) {
     console.log("getting services by user id");
@@ -370,54 +321,40 @@ module.exports = function (app) {
   });
 };
 
-// const bcrypt = require('bcrypt');
+app.post("/api/edit_user_service", function (req, res) {
+  console.log("editing user service");
+  
+  // Assuming user provides the id of the service they want to update
+  const serviceId = req.body.serviceId;
 
-// User sign-up function
-// app.post("/api/sign_up",async function (username, email, password) {
-//     try {
-//         // Hash the password
-//         const hashedPassword = await bcrypt.hash(password, 10);
+  // Values to update
+  const updatedValues = {
+    userId: req.body.userId,
+    price: req.body.price,
+    service_category: req.body.service_category,
+    service_category_number: req.body.service_category_number,
+    service_description: req.body.service_description,
+    votes: req.body.votes,
+  };
 
-//         // Create a new user record
-//         const user = await db.User.create({
-//             username: username,
-//             email: email,
-//             password: hashedPassword,
-//         });
+  // Update the User_service with matching serviceId
+  db.User_services.update(updatedValues, {
+    where: {
+      serviceId: serviceId
+    }
+  })
+    .then(function ([rowsUpdated]) {
+      if (rowsUpdated === 0) {
+        // No row found with the specified serviceId
+        res.status(404).json({ message: "User service not found"});
+      } else {
+        // Successfully updated
+        res.status(200).json({ message: "User service updated successfully", rowsUpdated });
+      }
+    })
+    .catch(function (err) {
+      console.log(err);
+      res.status(500).json(err);
+    });
+});
 
-//         console.log('User signed up successfully:', user.username);
-//         return user;
-//     } catch (error) {
-//         console.error('Error signing up user:', error);
-//         throw error;
-//     }
-//   });
-
-//   async function login(email, password) {
-//     try {
-//         // Find the user by email
-//         const user = await User.findOne({ where: { email } });
-
-//         if (!user) {
-//             console.log('Login failed: User not found');
-//             return null;
-//         }
-
-//         // Compare the provided password with the hashed password in the database
-//         const isPasswordValid = await bcrypt.compare(password, user.password);
-
-//         if (!isPasswordValid) {
-//             console.log('Login failed: Incorrect password');
-//             return null;
-//         }
-
-//         console.log('User logged in successfully:', user.username);
-//         return user;  // Optionally return user data or token for further processing
-//     } catch (error) {
-//         console.error('Error during login:', error);
-//         throw error;
-//     }
-// }
-
-//sign up a new user
-//sequelize sign up

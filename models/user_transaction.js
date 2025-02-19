@@ -42,6 +42,10 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.STRING,
       allowNull: false,
     },
+    service_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
     service_category_number: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -51,5 +55,21 @@ module.exports = function(sequelize, DataTypes) {
       allowNull: false,
     }
   });
+  user_transaction.associate = function(models) {
+    User_transaction.belongsTo(models.User, {
+      foreignKey: "buyer_id",
+      targetKey: "id",
+      as: "Buyer"
+    });
+    User_transaction.belongsTo(models.User, {
+      foreignKey: "seller_id",
+      targetKey: "id",
+      as: "Seller"
+    });
+    User_transaction.belongsTo(models.User_services, {
+      foreignKey: "service_id",
+      targetKey: "id"
+    });
+  };
   return User_transaction
 }

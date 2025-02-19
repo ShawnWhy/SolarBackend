@@ -86,5 +86,17 @@ module.exports = function(sequelize, DataTypes) {
           onDelete: "CASCADE",
         }); 
       };
+      User.associate = function(models){
+        User.hasMany(models.User_reviews, {
+          foreignKey: "userId",
+          onDelete: "CASCADE",
+        });
+      };
+      User.associate=function(models){
+        User.hasOne(models.User_profile,{
+          foreignKey:"userid",
+          onDelete:"CASCADE"
+        })  
+      }
   return User
 }

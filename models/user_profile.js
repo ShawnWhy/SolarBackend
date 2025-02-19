@@ -6,6 +6,7 @@ module.exports=function(sequelize, DataTypes){
       primaryKey: true,
       autoIncrement: true,
     },
+
     userid: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -21,5 +22,11 @@ module.exports=function(sequelize, DataTypes){
       type: DataTypes.STRING
     }
   })
+  User_profile.associate = function(models){
+    User_profile.belongsTo(models.User, {
+      foreignKey: "userid",
+      targetKey: "id"
+    })
+  }
   return User_profile;
 }

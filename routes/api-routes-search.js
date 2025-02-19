@@ -75,7 +75,7 @@ module.exports = function (app) {
             user_service.votes
           );
         });
-        if (body.order_by === "distance" || body.order_by === "price") {
+        if (body.order_by === "distance" || body.order_by === "price" || body.order_by === "time_required") {
           result.sort((a, b) => a[body.order_by] - b[body.order_by]);
         } else if (body.order_by === "rating") {
           result.sort((a, b) => b.rating - a.rating);
@@ -102,70 +102,7 @@ module.exports = function (app) {
       });
   };
 
-  const searchFunctionold = function (body, res) {
-    db.User.findAll({
-      where: {
-        user_category: 2,
-      },
-    }).then(function (result) {
-      result.forEach((user) => {
-        user.distance = zipcodes.distance(zipcode, user.zipcode);
-      });
-      result.sort((a, b) => a.distance - b.distance);
-      userIds = result.slice(0, 50).map((user) => user.id);
-      db.User_services.findAll({
-        where: {
-          userId: userIds,
-          //service name or service description
-          [Op.or]: [
-            {
-              service_category: {
-                //fuzzy search
-                [Op.like]: body.service_name,
-              },
-            },
-            {
-              service_description: {
-                //fuzzy search
-                [Op.like]: body.service_name,
-              },
-            },
-          ],
-          price: {
-            [Op.between]: [
-              body.service_price_range_bottom,
-              body.service_price_range_top,
-            ],
-          },
-        },
-        order: [[body.order_by, "DESC"]],
-        limit: body.search_limit,
-      })
-        .then(function (result) {
-          if (result.length === 0) {
-            searchFunctionFuzzyMatch(
-              {
-                userIds: userIds,
-                service_name: body.service_name,
-                service_price_range_top: body.service_price_range_top,
-                service_price_range_bottom: body.service_price_range_bottom,
-                order_by: body.order_by,
-                search_limit: body.search_limit,
-              },
-              res
-            );
-          } else {
-            res.json(result);
-          }
-        })
-        .catch(function (err) {
-          res.status(500).send(err);
-        });
-    });
-  };
-
   //search functions with out using distance
-
   const searchFunctionNoDistance = function (body, res) {
     console.log("searchFunctionNoDistance");
     console.log(body);
@@ -240,6 +177,7 @@ module.exports = function (app) {
     })
       .then(function (result) {
         const options = {
+          //the two places to find matches in fuzzy search
           keys: ["service_category", "service_description"],
           threshold: 0.8, // Adjust the threshold for fuzzy matching
           ignoreLocation: true,
@@ -318,7 +256,7 @@ module.exports = function (app) {
             user_service.votes
           );
         });
-        if (body.order_by === "distance" || body.order_by === "price") {
+        if (body.order_by === "distance" || body.order_by === "price" || body.order_by === "time_required") {
           searchResult.sort((a, b) => a.order_by - b.order_by);
         } else if (body.order_by === "rating") {
           searchResult.sort((a, b) => b.rating - a.rating);

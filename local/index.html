@@ -5,6 +5,35 @@
     <title>TESTING DOCUMENT</title>
   </head>
   <body>
+
+    <style>
+      body{
+        display:block;
+        text-align:center;
+      }
+    div,input, button, select, label{
+      display:block;
+      width:50%;
+      margin:10px;
+      flex-direction: column;
+       
+    }
+
+    form{
+      display:flex;
+      flex-direction: column;
+      width:30%;
+      margin:0 auto;
+      float:left;
+    }
+    #container{
+      display:flex;
+      flex-direction: column;
+      width:50%;
+      margin:0 auto;
+    }
+    </style>
+    <div id="container">
     <div id="searchContainer"></div>
     <div id="topUserContainer"></div>
     <button id="getTopUsers">get top users</button>
@@ -31,10 +60,8 @@
     <label for="searchWord">key Word</label>
     <input type="text" id="searchWord" />
     <label for="priceTop">price range Top</label>
-    //input for money with two decimal places  
     <input id="priceTop" type="number" step="0.01"/>
         <label for="priceBottom">price range bottom</label>
-    //input for money with two decimal places  
     <input id="priceBottom" type="number" step="0.01"/>
     <button type="submit">search</button>
     <label for="searchFormLimit">limit</label>
@@ -42,13 +69,47 @@
     <option value="price">price</option>
     <option value="rating">rating</option>
     <option value="distance">distance</option>
+    <option value="time_required">time required</option>
+
     </select>
     <input type="number" id="searchFormLimit">
     </form>
 
+    <div id = "chatroom"></div>
+    <div id="chatContainer"></div>
+    <form id="chatForm">
+    <input type="text" id="chatInput" />
+    <button type="submit">send</button>
+    </form>
 
+    <div id="playerUserContainer">
+    </div>
+    <form id="playerUserForm">
+    <label for="userFormName">Name</label>
+    <input type="text" id="userFormName" />
+    <label for="userFormEmail">Email</label>
+    <input type="text" id="userFormEmail" />
+    <label for="userFormPassword">Password</label>
+    <input type="text" id="userFormPassword" />
+    <button type="submit">signIn</button>
+    </form>
 
-    <!-- jqery -->
+       <form id="userForm">
+    <label for="userFormName">Name</label>
+    <input type="text" id="userFormName" />
+    <label for="userFormEmail">Email</label>
+    <input type="text" id="userFormEmail" />
+    <label for="userFormPassword">Password</label>
+    <input type="text" id="userFormPassword" />
+    <button type="submit">signIn</button>
+    </form>
+
+    
+
+</div>
+<!-- add socket IO from web  -->
+<script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="/services/API.js"></script>
     <script src="/services/userTasks.js"></script>

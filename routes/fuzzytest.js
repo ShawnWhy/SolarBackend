@@ -117,3 +117,65 @@ const searchTerm = "plamber";
 const searchResults = fuse.search(searchTerm);
 
 console.log(searchResults.map((result) => result.item));
+
+const searchFunctionold = function (body, res) {
+    db.User.findAll({
+      where: {
+        user_category: 2,
+      },
+    }).then(function (result) {
+      result.forEach((user) => {
+        user.distance = zipcodes.distance(zipcode, user.zipcode);
+      });
+      result.sort((a, b) => a.distance - b.distance);
+      userIds = result.slice(0, 50).map((user) => user.id);
+      db.User_services.findAll({
+        where: {
+          userId: userIds,
+          //service name or service description
+          [Op.or]: [
+            {
+              service_category: {
+                //fuzzy search
+                [Op.like]: body.service_name,
+              },
+            },
+            {
+              service_description: {
+                //fuzzy search
+                [Op.like]: body.service_name,
+              },
+            },
+          ],
+          price: {
+            [Op.between]: [
+              body.service_price_range_bottom,
+              body.service_price_range_top,
+            ],
+          },
+        },
+        order: [[body.order_by, "DESC"]],
+        limit: body.search_limit,
+      })
+        .then(function (result) {
+          if (result.length === 0) {
+            searchFunctionFuzzyMatch(
+              {
+                userIds: userIds,
+                service_name: body.service_name,
+                service_price_range_top: body.service_price_range_top,
+                service_price_range_bottom: body.service_price_range_bottom,
+                order_by: body.order_by,
+                search_limit: body.search_limit,
+              },
+              res
+            );
+          } else {
+            res.json(result);
+          }
+        })
+        .catch(function (err) {
+          res.status(500).send(err);
+        });
+    });
+  };
