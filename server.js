@@ -23,6 +23,8 @@ app.use(
 require("./routes/api-routes")(app);
 require("./routes/api-routes-other")(app);
 require("./routes/api-routes-search")(app);
+require("./routes/api-routes-sorts")(app);
+require("./routes/api-routes-additional")(app);
 var PORT = process.env.PORT || 8081;
 const server = require("http").createServer(app);
 var db = require("./models");
